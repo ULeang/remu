@@ -1,0 +1,9 @@
+build/
+tinyemu/
+compile_commands.json
+*.bin
+*.elf
+remu
+*.S
+*.o
+.clang-format
