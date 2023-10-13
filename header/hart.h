@@ -70,6 +70,21 @@ typedef enum INST_NAME {
   MRET,
   SRET,
   WFI,
+
+  // M
+  MUL,
+  MULH,
+  MULHSU,
+  MULHU,
+  DIV,
+  DIVU,
+  REM,
+  REMU,
+  MULW,
+  DIVW,
+  DIVUW,
+  REMW,
+  REMUW,
   // end
   INST_NUM,
 } INST_NAME;
@@ -114,11 +129,11 @@ typedef enum HART_STATE {
   HART_RUN,
 } HART_STATE;
 
-typedef enum HART_PRI_LEVEL {
+typedef enum HART_PRL_MODE {
   U = 0b00,
   S = 0b01,
   M = 0b11,
-} HART_PRI_LEVEL;
+} HART_PRL_MODE;
 
 typedef struct DECODER {
   uint32_t    inst;
@@ -136,13 +151,13 @@ typedef struct DECODER {
 } DECODER;
 
 typedef struct HART {
-  reg_t          gpr[32];
-  reg_t          pc;
-  BUS*           bus;
-  HART_STATE     state;
-  HART_PRI_LEVEL privilege;
-  CSR            csr;
-  DECODER        decoder;
+  reg_t         gpr[32];
+  reg_t         pc;
+  BUS*          bus;
+  HART_STATE    state;
+  HART_PRL_MODE privilege;
+  CSR           csr;
+  DECODER       decoder;
 } HART;
 
 extern void (*inst_handler[INST_NUM])(HART*);

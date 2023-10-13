@@ -24,12 +24,13 @@ static reg_t imm_j(uint32_t inst) {
               21);
 }
 
-static uint32_t inst_fetch(HART *hart) { return mem_load(hart->bus, hart->pc, 4); }
-static void     decode(HART *hart) {
+static void fetch(HART *hart) {
+  hart->decoder.inst = mem_load(hart->bus, hart->pc, 4);
+}
+static void decode(HART *hart) {
   DECODER *dec  = &hart->decoder;
-  uint32_t inst = inst_fetch(hart);
+  uint32_t inst = hart->decoder.inst;
 
-  dec->inst     = inst;
   dec->rd       = BITS(inst, 11, 7);
   dec->rs1      = BITS(inst, 19, 15);
   dec->rs2      = BITS(inst, 24, 20);
@@ -37,10 +38,10 @@ static void     decode(HART *hart) {
   dec->cpc      = hart->pc;
   dec->npc      = hart->pc + 4;
 
+  uint32_t opcode = BITS(inst, 6, 0);
   uint32_t funct3 = BITS(inst, 14, 12);
   uint32_t funct7 = BITS(inst, 31, 25);
   uint32_t funct6 = BITS(inst, 31, 26);
-  uint32_t opcode = BITS(inst, 6, 0);
   switch (opcode) {
   case 0b0110111:
     dec->inst_name = LUI;
@@ -127,6 +128,14 @@ static void     decode(HART *hart) {
     switch ((funct7 << 3) | funct3) {
     case 0b0000000000: dec->inst_name = ADD; break;
     case 0b0100000000: dec->inst_name = SUB; break;
+    case 0b0000001000: dec->inst_name = MUL; break;
+    case 0b0000001001: dec->inst_name = MULH; break;
+    case 0b0000001010: dec->inst_name = MULHSU; break;
+    case 0b0000001011: dec->inst_name = MULHU; break;
+    case 0b0000001100: dec->inst_name = DIV; break;
+    case 0b0000001101: dec->inst_name = DIVU; break;
+    case 0b0000001110: dec->inst_name = REM; break;
+    case 0b0000001111: dec->inst_name = REMU; break;
     case 0b001: dec->inst_name = SLL; break;
     case 0b010: dec->inst_name = SLT; break;
     case 0b011: dec->inst_name = SLTU; break;
@@ -141,6 +150,11 @@ static void     decode(HART *hart) {
     switch ((funct7 << 3) | funct3) {
     case 0b0000000000: dec->inst_name = ADDW; break;
     case 0b0100000000: dec->inst_name = SUBW; break;
+    case 0b0000001000: dec->inst_name = MULW; break;
+    case 0b0000001100: dec->inst_name = DIVW; break;
+    case 0b0000001101: dec->inst_name = DIVUW; break;
+    case 0b0000001110: dec->inst_name = REMW; break;
+    case 0b0000001111: dec->inst_name = REMUW; break;
     case 0b001: dec->inst_name = SLLW; break;
     case 0b0000000101: dec->inst_name = SRLW; break;
     case 0b0100000101: dec->inst_name = SRAW; break;
@@ -156,11 +170,11 @@ static void     decode(HART *hart) {
     switch (funct3) {
     case 0b000:
       switch ((funct7) << 5 | dec->rs2) {
-      case 0b000000000000: dec->inst_name = ECALL;
-      case 0b000000000001: dec->inst_name = EBREAK;
-      case 0b000100000010: dec->inst_name = SRET;
-      case 0b001100000010: dec->inst_name = MRET;
-      case 0b000100000101: dec->inst_name = WFI;
+      case 0b000000000000: dec->inst_name = ECALL; break;
+      case 0b000000000001: dec->inst_name = EBREAK; break;
+      case 0b000100000010: dec->inst_name = SRET; break;
+      case 0b001100000010: dec->inst_name = MRET; break;
+      case 0b000100000101: dec->inst_name = WFI; break;
       }
       break;
     case 0b001: dec->inst_name = CSRRW; break;
@@ -174,6 +188,16 @@ static void     decode(HART *hart) {
   default: dec->inst_name = INST_NUM; break;
   }
 }
+
+static void execute(HART *hart) {
+  if (hart->decoder.inst_name == INST_NUM) {
+    hart->state = HART_STOP;
+    return;
+  }
+  inst_handler[hart->decoder.inst_name](hart);
+  hart->gpr[0] = 0;
+}
+static void write_back(HART *hart) { hart->pc = hart->decoder.npc; }
 
 HART *mk_hart(BUS *bus) {
   HART *ret = malloc(sizeof(HART));
@@ -202,14 +226,10 @@ void hart_run(HART *hart) {
   }
 }
 void hart_step(HART *hart) {
+  fetch(hart);
   decode(hart);
-  if (hart->decoder.inst_name == INST_NUM) {
-    hart->state = HART_STOP;
-    return;
-  }
-  inst_handler[hart->decoder.inst_name](hart);
-  hart->gpr[0] = 0;
-  hart->pc     = hart->decoder.npc;
+  execute(hart);
+  write_back(hart);
 }
 
 static const char *reg_abinames[] = {
@@ -218,6 +238,7 @@ static const char *reg_abinames[] = {
     "s6",   "s7", "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
 
 void print_next_disassmembly(HART *hart) {
+  fetch(hart);
   decode(hart);
   printf("-> %p : %08x\n", (void *)hart->pc, hart->decoder.inst);
 }
@@ -244,5 +265,8 @@ void (*inst_handler[INST_NUM])(HART *) = {
     [SUBW] = _subw,     [SLLW] = _sllw,     [SRLW] = _srlw,   [SRAW] = _sraw,
     [CSRRW] = _csrrw,   [CSRRS] = _csrrs,   [CSRRC] = _csrrc, [CSRRWI] = _csrrwi,
     [CSRRSI] = _csrrsi, [CSRRCI] = _csrrci, [MRET] = _mret,   [SRET] = _sret,
-    [WFI] = _wfi,
+    [WFI] = _wfi,       [MUL] = _mul,       [MULH] = _mulh,   [MULHSU] = _mulhsu,
+    [MULHU] = _mulhu,   [DIV] = _div,       [DIVU] = _divu,   [REM] = _rem,
+    [REMU] = _remu,     [MULW] = _mulw,     [DIVW] = _divw,   [DIVUW] = _divuw,
+    [REMW] = _remw,     [REMUW] = _remuw,
 };

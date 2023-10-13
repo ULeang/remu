@@ -77,37 +77,6 @@ static void raise_exception(HART* hart, EXCEPTION_CODE exception_code) {
     NPC = CSRR(mtvec) & ~0b11ull;
   }
 }
-void raise_interrupt(HART* hart, EXCEPTION_CODE exception_code) {
-  reg_t trap_code = (1ull << 63) | exception_code;
-  if ((PRL < M || CSRR_F(mstatus_MIE)) &&
-      CSRR_F(mip, exception_code, exception_code) &&
-      CSRR_F(mie, exception_code, exception_code) &&
-      !CSRR_F(mideleg, exception_code, exception_code)) {
-    CSRW(mcause, trap_code);
-    CSRW(mepc, NPC);
-    CSRW(mtval, 0);
-    CSRW_F(mstatus_MPP, PRL);
-    CSRW_F(mstatus_MPIE, CSRR_F(mstatus_MIE));
-    CSRW_F(mstatus_MIE, 0);
-    PRL = M;
-    NPC = CSRR_F(mtvec_MODE) == 0 ? CSRR(mtvec)
-                                  : (CSRR(mtvec) & ~0b11ull) + exception_code * 4;
-  } else if ((PRL < S || (PRL == S && CSRR_F(sstatus_SIE))) &&
-             CSRR_F(sip, exception_code, exception_code) &&
-             CSRR_F(sie, exception_code, exception_code)) {
-    CSRW(scause, trap_code);
-    CSRW(sepc, NPC);
-    CSRW(stval, 0);
-    CSRW_F(mstatus_SPP, PRL);
-    CSRW_F(mstatus_SPIE, CSRR_F(mstatus_SIE));
-    CSRW_F(mstatus_SIE, 0);
-    PRL = S;
-    NPC = CSRR_F(stvec_MODE) == 0 ? CSRR(stvec)
-                                  : (CSRR(stvec) & ~0b11ull) + exception_code * 4;
-  } else {
-    return;
-  }
-}
 
 void _lui(HART* hart) { RD = IMM; }
 void _auipc(HART* hart) { RD = CPC + IMM; }
@@ -251,8 +220,8 @@ void _csrrci(HART* hart) {
 
 void _mret(HART* hart) {
   CSRW_F(mstatus_MIE, CSRR_F(mstatus_MPIE));
-  HART_PRI_LEVEL mpp = CSRR_F(mstatus_MPP);
-  PRL                = mpp;
+  HART_PRL_MODE mpp = CSRR_F(mstatus_MPP);
+  PRL               = mpp;
   CSRW_F(mstatus_MPIE, 1);
   CSRW_F(mstatus_MPP, U);
   if (mpp != M) CSRW_F(mstatus_MPRV, 0);
@@ -261,11 +230,116 @@ void _mret(HART* hart) {
 void _sret(HART* hart) {
   raise_exception_if(CSRR_F(mstatus_TSR), Illegal_instruction);
   CSRW_F(mstatus_SIE, CSRR_F(mstatus_SPIE));
-  HART_PRI_LEVEL spp = CSRR_F(mstatus_SPP);
-  PRL                = spp;
+  HART_PRL_MODE spp = CSRR_F(mstatus_SPP);
+  PRL               = spp;
   CSRW_F(mstatus_SPIE, 1);
   CSRW_F(mstatus_SPP, U);
   if (spp != M) CSRW_F(mstatus_MPRV, 0);
   NPC = CSRR(sepc);
 }
 void _wfi(HART* hart) { hart->state = HART_STOP; }
+
+void _mul(HART* hart) {
+  asm volatile(
+      "mulq %%rdx\n\t"
+      "movq %%rax,(%2)" ::"a"(RS1),
+      "d"(RS2), "r"(&RD));
+}
+void _mulh(HART* hart) {
+  asm volatile(
+      "imulq %%rdx\n\t"
+      "movq  %%rdx,(%2)" ::"a"(RS1),
+      "d"(RS2), "r"(&RD));
+}
+void _mulhsu(HART* hart) {
+  asm volatile(
+      "mulq %%rdx\n\t"
+      "movq %%rdx,(%2)" ::"a"(RS1),
+      "d"(RS2), "r"(&RD));
+  if (RS1S < 0) RD = RD - RS2;
+}
+void _mulhu(HART* hart) {
+  asm volatile(
+      "mulq %%rdx\n\t"
+      "movq %%rdx,(%2)" ::"a"(RS1),
+      "d"(RS2), "r"(&RD));
+}
+void _div(HART* hart) {
+  if (RS2S == 0) {
+    RD = ~0ull;
+  } else if (RS1S == 1ull << 63 && RS2S == -1) {
+    RD = 1ull << 63;
+  } else {
+    RD = RS1S / RS2S;
+  }
+}
+void _divu(HART* hart) {
+  if (RS2 == 0) {
+    RD = ~0ull;
+  } else {
+    RD = RS1 / RS2;
+  }
+}
+void _rem(HART* hart) {
+  if (RS2S == 0) {
+    RD = RS1S;
+  } else if (RS1S == 1ull << 63 && RS2S == -1) {
+    RD = 0;
+  } else {
+    RD = RS1S % RS2S;
+  }
+}
+void _remu(HART* hart) {
+  if (RS2 == 0) {
+    RD = RS1;
+  } else {
+    RD = RS1 % RS2;
+  }
+}
+void _mulw(HART* hart) {
+  asm volatile(
+      "mull %%edx\n\t"
+      "movslq %%eax,%%rax\n\t"
+      "movq %%rax,(%2)" ::"a"(RS1),
+      "d"(RS2), "r"(&RD));
+}
+void _divw(HART* hart) {
+  int32_t rs1_32 = RS1;
+  int32_t rs2_32 = RS2;
+  if (rs2_32 == 0) {
+    RD = ~0ull;
+  } else if (rs1_32 == 1 << 31 && rs2_32 == -1) {
+    RD = 1 << 31;
+  } else {
+    RD = SEXT(rs1_32 / rs2_32, 32);
+  }
+}
+void _divuw(HART* hart) {
+  uint32_t rs1_32 = RS1;
+  uint32_t rs2_32 = RS2;
+  if (rs2_32 == 0) {
+    RD = ~0ull;
+  } else {
+    RD = SEXT(rs1_32 / rs2_32, 32);
+  }
+}
+void _remw(HART* hart) {
+  int32_t rs1_32 = RS1;
+  int32_t rs2_32 = RS2;
+  if (rs2_32 == 0) {
+    RD = SEXT(rs1_32, 32);
+  } else if (rs1_32 == 1 << 31 && rs2_32 == -1) {
+    RD = 0;
+  } else {
+    RD = SEXT(rs1_32 % rs2_32, 32);
+  }
+}
+void _remuw(HART* hart) {
+  uint32_t rs1_32 = RS1;
+  uint32_t rs2_32 = RS2;
+  if (rs2_32 == 0) {
+    RD = ~0ull;
+  } else {
+    RD = SEXT(rs1_32 % rs2_32, 32);
+  }
+}

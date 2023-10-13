@@ -97,11 +97,8 @@ typedef enum CSR_ADDR {
   mhartid,
   mconfigptr,
   /* machine trap setup */
-  /* sstatus is a subset of the mstatus register, so we straightforwardly implement
-     mstatus as sstatus, which locates at 0x100 */
-  // mstatus = 0x300,
-  mstatus = sstatus,
-  misa    = 0x301,
+  mstatus = 0x300,
+  misa,
   medeleg,
   mideleg,
   mie,

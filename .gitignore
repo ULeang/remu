@@ -1,5 +1,6 @@
 build/
 tinyemu/
+riscv-tests/
 compile_commands.json
 *.bin
 *.elf
@@ -7,3 +8,4 @@ remu
 *.S
 *.o
 .clang-format
+.gdbinit

@@ -4,7 +4,7 @@ SRCDIR=./src
 BUILDDIR=./build
 
 TARGET=remu
-CFLAGS=-O2 -g -Wall
+CFLAGS=-O0 -g -Wall
 CPPFLAGS=
 ASFLAGS=
 LDFLAGS=
@@ -63,5 +63,12 @@ debug: all
 clean:
 	@rm -f $(BINTARGET) $(OBJS) $(DEPS)
 	@echo 'Done'
+
+RV64IM.o: RV64IM.S
+	riscv64-elf-as -o $@ $< -march=rv64im -mabi=lp64
+RV64IM.elf: RV64IM.o
+	riscv64-elf-ld -o $@ $< -Ttext=0x80000000
+hello.bin: RV64IM.elf
+	riscv64-elf-objcopy $< -O binary $@ -S
 
 -include $(DEPS)

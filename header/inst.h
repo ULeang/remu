@@ -68,6 +68,20 @@ extern void _mret(HART* hart);
 extern void _sret(HART* hart);
 extern void _wfi(HART* hart);
 
+extern void _mul(HART* hart);
+extern void _mulh(HART* hart);
+extern void _mulhsu(HART* hart);
+extern void _mulhu(HART* hart);
+extern void _div(HART* hart);
+extern void _divu(HART* hart);
+extern void _rem(HART* hart);
+extern void _remu(HART* hart);
+extern void _mulw(HART* hart);
+extern void _divw(HART* hart);
+extern void _divuw(HART* hart);
+extern void _remw(HART* hart);
+extern void _remuw(HART* hart);
+
 typedef enum EXCEPTION_CODE {
   /* interrupt */
   // 0:Reserved
@@ -107,7 +121,5 @@ typedef enum EXCEPTION_CODE {
   // 48-63:Designated for custom use
   // >=64:Reserved
 } EXCEPTION_CODE;
-
-extern void raise_interrupt(HART* hart, EXCEPTION_CODE exception_code);
 
 #endif
