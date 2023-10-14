@@ -253,7 +253,7 @@ static char *regs_generator(const char *text, int state) {
     list_index = 0;
     len        = strlen(text);
   }
-  for (name = regs[list_index].regname; name;) {
+  while ((name = regs[list_index].regname)) {
     ++list_index;
     if (strncmp(name, text, len) == 0) return strdup(name);
   }
