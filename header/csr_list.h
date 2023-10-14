@@ -8,7 +8,8 @@ typedef enum CSR_ADDR {
   fcsr,
   /* Unprivileged Counter/Timers */
   cycle = 0xc00,
-  time,
+  // time, redefinition, so change to csr_time
+  csr_time,
   instret,
   hpmcounter3,
   hpmcounter4,

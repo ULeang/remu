@@ -4,7 +4,7 @@ SRCDIR=./src
 BUILDDIR=./build
 
 TARGET=remu
-CFLAGS=-O0 -g -Wall
+CFLAGS=-O0 -g -Wall -lreadline
 CPPFLAGS=
 ASFLAGS=
 LDFLAGS=

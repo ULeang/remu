@@ -124,6 +124,8 @@ typedef enum REG_ABINAME {
   t6
 } REG_ABINAME;
 
+extern const char* reg_abinames[];
+
 typedef enum HART_STATE {
   HART_STOP,
   HART_RUN,
@@ -167,6 +169,5 @@ extern void  hart_run(HART* hart);
 extern void  hart_step(HART* hart);
 
 extern void print_next_disassmembly(HART* hart);
-extern void print_gpr(HART* hart);
 
 #endif

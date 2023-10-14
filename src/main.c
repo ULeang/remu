@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "machine.h"
+#include "monitor.h"
 
 int main() {
   FILE* fp = fopen("hello.bin", "rb");
@@ -14,6 +15,15 @@ int main() {
 
   MACHINE* machine = default_machine();
   dd_bin_dram(machine, buffer, 512);
-  boot(machine);
+  // boot(machine);
+  hart_reset(machine->hart);
+
+  initialize_readline();
+  char* input = NULL;
+  while (1) {
+    input = rl();
+    if (!input) break;
+    monitor_execute(machine, input);
+  }
   return 0;
 }
