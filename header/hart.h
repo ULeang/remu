@@ -168,6 +168,7 @@ extern void  hart_reset(HART* hart);
 extern void  hart_run(HART* hart);
 extern void  hart_step(HART* hart);
 
-extern void print_next_disassmembly(HART* hart);
+extern void fetch(HART* hart);
+extern void decode(HART* hart);
 
 #endif

@@ -24,10 +24,10 @@ static reg_t imm_j(uint32_t inst) {
               21);
 }
 
-static void fetch(HART *hart) {
+void fetch(HART *hart) {
   hart->decoder.inst = mem_load(hart->bus, hart->pc, 4);
 }
-static void decode(HART *hart) {
+void decode(HART *hart) {
   DECODER *dec  = &hart->decoder;
   uint32_t inst = hart->decoder.inst;
 
@@ -236,12 +236,6 @@ const char *reg_abinames[] = {"zero",  "ra", "sp",  "gp",  "tp", "t0", "t1", "t2
                               "s0/fp", "s1", "a0",  "a1",  "a2", "a3", "a4", "a5",
                               "a6",    "a7", "s2",  "s3",  "s4", "s5", "s6", "s7",
                               "s8",    "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
-
-void print_next_disassmembly(HART *hart) {
-  fetch(hart);
-  decode(hart);
-  printf("-> %p : %08x\n", (void *)hart->pc, hart->decoder.inst);
-}
 
 void (*inst_handler[INST_NUM])(HART *) = {
     [LUI] = _lui,       [AUIPC] = _auipc,   [JAL] = _jal,     [JALR] = _jalr,

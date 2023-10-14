@@ -117,6 +117,43 @@ static int find_reg(char **reg) {
   return -1;
 }
 
+static int com_registers(MACHINE *machine, char *args);
+static int com_memory(MACHINE *machine, char *args);
+static int com_reset(MACHINE *machine, char *args);
+static int com_step(MACHINE *machine, char *args);
+static int com_continue(MACHINE *machine, char *args);
+static int com_display(MACHINE *machine, char *args);
+static int com_watch(MACHINE *machine, char *args);
+static int com_breakpoint(MACHINE *machine, char *args);
+static int com_help(MACHINE *machine, char *args);
+static int com_inst(MACHINE *machine, char *args);
+static int com_quit(MACHINE *machine, char *args);
+static int com_eval(MACHINE *machine, char *args);
+
+typedef int com_t(MACHINE *, char *);
+typedef struct {
+  char  *name;
+  char  *abbr;
+  com_t *func;
+  char  *doc;
+} COMMAND;
+
+static const COMMAND commands[] = {
+    {"register", "reg", com_registers, "List registers"},
+    {"memory", "x", com_memory, "Examine memory"},
+    {"reset", "r", com_reset, "Reset machine"},
+    {"step", "s", com_step, "Execute one inst"},
+    {"continue", "c", com_continue, "Run machine"},
+    {"display", "d", com_display, "Auto print value"},
+    {"watch", "w", com_watch, "Set watchpoints"},
+    {"break", "b", com_breakpoint, "Set breakpoints"},
+    {"help", "h", com_help, "Show help"},
+    {"inst", "l", com_inst, "Show current inst"},
+    {"quit", "q", com_quit, "Quit remu"},
+    {"eval", "e", com_eval, "Evaluate expression"},
+    {NULL, NULL, NULL, NULL},
+};
+
 #define rprintf(name, fmt, args...) printf("\033[;36m%s\033[m -> " fmt, name, ##args)
 #define mprintf(addr, fmt, args...) \
   printf("\033[;31m%p\033[m -> " fmt, (void *)(addr), ##args)
@@ -154,23 +191,39 @@ static int com_memory(MACHINE *machine, char *fmt_addr) {}
 static int com_reset(MACHINE *machine, char *_must_no_args) {
   printf("reset\n");
   hart_reset(machine->hart);
+  com_inst(machine, "");
   return 0;
 }
 static int com_step(MACHINE *machine, char *count) {
   printf("step\n");
   hart_step(machine->hart);
+  com_inst(machine, "");
   return 0;
 }
 static int com_continue(MACHINE *machine, char *_must_no_args) {
   printf("continue\n");
   hart_run(machine->hart);
+  com_inst(machine, "");
   return 0;
 }
 static int com_display(MACHINE *machine, char *fmt_addr_of_regs) {}
 static int com_watch(MACHINE *machine, char *regs) {}
 static int com_breakpoint(MACHINE *machine, char *addr) {}
-static int com_help(MACHINE *machine, char *command) {}
-static int com_inst(MACHINE *machine, char *_must_no_args) {}
+static int com_help(MACHINE *machine, char *command) {
+  for (int i = 0; commands[i].name; ++i) {
+    printf("%-10s - %-3s\t--\t%s\n", commands[i].name, commands[i].abbr,
+           commands[i].doc);
+  }
+  return 0;
+}
+
+static int com_inst(MACHINE *machine, char *_must_no_args) {
+  fetch(machine->hart);
+  decode(machine->hart);
+  printf("\033[;36mpc\033[m = %p -> %08x\n", (void *)machine->hart->decoder.cpc,
+         machine->hart->decoder.inst);
+  return 0;
+}
 static int com_quit(MACHINE *machine, char *_must_no_args) {
   char *args = stripwhite(_must_no_args);
   if (*args) {
@@ -207,30 +260,6 @@ static int com_quit(MACHINE *machine, char *_must_no_args) {
   }
 }
 static int com_eval(MACHINE *machine, char *expr) {}
-
-typedef int com_t(MACHINE *, char *);
-typedef struct {
-  char  *name;
-  char  *abbr;
-  com_t *func;
-  char  *doc;
-} COMMAND;
-
-static const COMMAND commands[] = {
-    {"register", "reg", com_registers, "List registers"},
-    {"memory", "x", com_memory, "Examine memory"},
-    {"reset", "r", com_reset, "Reset machine"},
-    {"step", "s", com_step, "Execute one inst"},
-    {"continue", "c", com_continue, "Run machine"},
-    {"display", "d", com_display, "Auto print value"},
-    {"watch", "w", com_watch, "Set watchpoints"},
-    {"break", "b", com_breakpoint, "Set breakpoints"},
-    {"help", "h", com_help, "Show help"},
-    {"inst", "l", com_inst, "Show current inst"},
-    {"quit", "q", com_quit, "Quit remu"},
-    {"eval", "e", com_eval, "Evaluate expression"},
-    {NULL, NULL, NULL, NULL},
-};
 
 // typedef char *rl_compentry_func_t (const char *, int);
 static char *command_generator(const char *text, int state) {
@@ -298,8 +327,7 @@ int monitor_execute(MACHINE *machine, char *command) {
   if (list_index == -1)
     return 1;
   else if (list_index >= 0) {
-    commands[list_index].func(machine, command);
-    return 0;
+    return commands[list_index].func(machine, command);
   } else {
     printf("error: unrecognized command\n");
     return -1;
