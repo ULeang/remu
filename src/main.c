@@ -3,10 +3,14 @@
 #include "machine.h"
 #include "monitor.h"
 
-int main() {
-  FILE* fp = fopen("hello.bin", "rb");
+int main(int argc, char** argv) {
+  if (argc == 1) {
+    fprintf(stderr, "no file provided\n");
+    return 1;
+  }
+  FILE* fp = fopen(argv[1], "rb");
   if (!fp) {
-    fprintf(stderr, "cannot open 'hello.bin'\n");
+    fprintf(stderr, "cannot open '%s'\n", argv[1]);
     return 1;
   }
   byte_t buffer[512] = {0};

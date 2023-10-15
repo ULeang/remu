@@ -6,19 +6,13 @@ BUILDDIR=./build
 TARGET=remu
 CFLAGS=-O0 -g -Wall -lreadline
 CPPFLAGS=
-ASFLAGS=
-LDFLAGS=
 
 INCFLAGS=-I$(INCLUDEDIR)
 
 CFLAGS+=$(INCFLAGS)
 
 CC=gcc
-AS=as
-LD=ld
 GDB=gdb
-OBJDUMP=objdump
-OBJCOPY=objcopy
 
 BINTARGET=$(addprefix $(BINDIR)/,$(TARGET))
 SRCS_C=$(wildcard $(SRCDIR)/*.c)
@@ -28,8 +22,21 @@ OBJS+=$(patsubst %.S,$(BUILDDIR)/%.o,$(notdir $(SRCS_ASM)))
 DEPS=$(patsubst %.c,$(BUILDDIR)/%.d,$(notdir $(SRCS_C)))
 DEPS+=$(patsubst %.S,$(BUILDDIR)/%.d,$(notdir $(SRCS_ASM)))
 
+RISCVDIR=./test
+RISCV_PREFIX=riscv64-linux-gnu-
+
+RAS=$(RISCV_PREFIX)as
+RLD=$(RISCV_PREFIX)ld
+ROBJCOPY=$(RISCV_PREFIX)objcopy
+ROBJDUMP=$(RISCV_PREFIX)objdump
+
+RSRCS=$(wildcard $(RISCVDIR)/*.S)
+ROBJS=$(patsubst %.S,%.o,$(RSRCS))
+RELF=$(RISCVDIR)/RV64IM.elf
+RBIN=$(RISCVDIR)/RV64IM.bin
+
 .PHONY: all
-all: $(BINTARGET)
+all: $(BINTARGET) $(RBIN)
 	@echo 'Done'
 
 $(BINTARGET): $(OBJS)
@@ -53,22 +60,25 @@ $(BUILDDIR)/%.d: $(SRCDIR)/%.S
 
 .PHONY: run
 run: all
-	@./$(BINTARGET)
+	@./$(BINTARGET) $(RBIN)
 
 .PHONY: debug
 debug: all
-	@$(GDB) $(BINTARGET) -q
+	@$(GDB) --args $(BINTARGET) $(RBIN) -q
 
 .PHONY: clean
 clean:
-	@rm -f $(BINTARGET) $(OBJS) $(DEPS)
+	@rm -f $(BINTARGET) $(OBJS) $(DEPS) $(ROBJS) $(RBIN) $(RELF)
 	@echo 'Done'
 
-RV64IM.o: RV64IM.S
-	riscv64-elf-as -o $@ $< -march=rv64im -mabi=lp64
-RV64IM.elf: RV64IM.o
-	riscv64-elf-ld -o $@ $< -Ttext=0x80000000
-hello.bin: RV64IM.elf
-	riscv64-elf-objcopy $< -O binary $@ -S
+$(RBIN): $(RELF)
+	@$(ROBJCOPY) $< -O binary $@ -S
+$(RELF): $(ROBJS)
+	@$(RLD) -o $@ $< -Ttext=0x80000000
+$(RISCVDIR)/%.o: $(RISCVDIR)/%.S
+	@$(RAS) -o $@ $< -march=rv64im -mabi=lp64
+.PHONY: code
+code:	$(RELF)
+	@$(ROBJDUMP) -S $(RELF) | less
 
 -include $(DEPS)

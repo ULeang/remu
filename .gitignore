@@ -1,11 +1,9 @@
 build/
-tinyemu/
 riscv-tests/
 compile_commands.json
-*.bin
-*.elf
-remu
-*.S
 *.o
+*.elf
+*.bin
 .clang-format
 .gdbinit
+remu
