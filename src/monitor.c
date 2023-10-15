@@ -1,5 +1,6 @@
 #include "monitor.h"
 
+#include <ctype.h>
 #include <readline/chardefs.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,7 @@
 #define isfirstcomchar(c) (isalpha(c) || (c) == '_')
 #define iscomchar(c)      (isalnum(c) || (c) == '_')
 #define max(a, b)         ((a) >= (b) ? (a) : (b))
+#define min(a, b)         ((a) <= (b) ? (a) : (b))
 
 // input: string end with '\0', not including NULL
 // strip white char leading or trailing the input string
@@ -187,7 +189,169 @@ static int com_registers(MACHINE *machine, char *reg) {
   }
   return 0;
 }
-static int com_memory(MACHINE *machine, char *fmt_addr) {}
+static int com_memory(MACHINE *machine, char *fmt_addr) {
+  unsigned long count                                    = 1;
+  static enum { O, X, D, U, T, F, A, I, C, S, Z } format = U;
+  static enum { B = 1, H = 2, W = 4, G = 8 } size        = B;
+  static reg_t addr                                      = 0x0;
+
+  char *s = stripwhite(fmt_addr);
+  if (s[0] == '/') {
+    ++s;
+    if (isdigit(*s)) {
+      unsigned long temp = strtoul(s, &s, 10);
+      if (temp == 0) {
+        printf("invalid count\n");
+        return -1;
+      }
+      count = min(1024, temp);
+    }
+    while (!whitespace(*s) && *s != '\0') {
+      switch (*s) {
+      case 'o':
+        format = O;
+        ++s;
+        break;
+      case 'x':
+        format = X;
+        ++s;
+        break;
+      case 'd':
+        format = D;
+        ++s;
+        break;
+      case 'u':
+        format = U;
+        ++s;
+        break;
+      case 't':
+        format = T;
+        ++s;
+        break;
+      case 'f':
+        format = F;
+        ++s;
+        break;
+      case 'a':
+        format = A;
+        ++s;
+        break;
+      case 'i':
+        format = I;
+        ++s;
+        break;
+      case 'c':
+        format = C;
+        ++s;
+        break;
+      case 's':
+        format = S;
+        ++s;
+        break;
+      case 'z':
+        format = Z;
+        ++s;
+        break;
+      case 'b':
+        size = B;
+        ++s;
+        break;
+      case 'h':
+        size = H;
+        ++s;
+        break;
+      case 'w':
+        size = W;
+        ++s;
+        break;
+      case 'g':
+        size = G;
+        ++s;
+        break;
+      default: printf("unrecognized format or size letter '%c'\n", *s); return -2;
+      }
+    }
+  }
+  s = stripwhite(s);
+  if (s[0] != '\0') {
+    unsigned long temp = strtoul(s, &s, 16);
+    addr               = temp;
+    s                  = stripwhite(s);
+  }
+  if(addr==0){
+    printf("address needed\n");
+    return -3;
+  }
+  if (s[0] != '\0') {
+    printf("to many args '%s'\n", s);
+    return -4;
+  }
+
+  if (format == I)
+    size = W;
+  else if (format == A)
+    size = G;
+  else if (format == C)
+    size = B;
+  else if (format == S)
+    size = B;
+
+  int i = 0;
+  while (i < count) {
+    int nprint = min(16 / size, count - i);
+    if (format == S) nprint = 1;
+    mprintf(addr, "");
+    for (int ii = 0; ii < nprint; ++ii) {
+      switch (format) {
+      case O:
+        printf(&" %lo"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
+        break;
+      case X:
+        printf(&" %lx"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
+        break;
+      case D:
+        printf(&" %ld"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
+        break;
+      case U:
+        printf(&" %lu"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
+        break;
+      case T:
+        printf(&" %lx"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
+        break;
+      case F:
+        printf(&" %f"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
+        break;
+      case A:
+        printf(&" %p"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
+        break;
+      case I:
+        printf(&" %08lx"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
+        break;
+      case C: {
+        unsigned char c = mem_load(machine->hart->bus, addr, size);
+        if (isprint(c))
+          printf(&" %c"[ii == 0], c);
+        else {
+          printf(&" '\\%03o'"[ii == 0], c);
+        }
+        break;
+      }
+      case S:
+        printf(&" %s"[(ii == 0)],
+               machine -> hart -> bus -> dram -> dram + (addr - DRAM_BASE));
+        addr += strlen((char *)machine->hart->bus->dram->dram + (addr - DRAM_BASE));
+        break;
+      case Z:
+        printf(&" %0*lx"[(ii == 0)],size*2, mem_load(machine->hart->bus, addr, size));
+        break;
+      }
+      addr += size;
+    }
+    printf("\n");
+    i += nprint;
+  }
+  return 0;
+}
 static int com_reset(MACHINE *machine, char *_must_no_args) {
   printf("reset\n");
   hart_reset(machine->hart);
