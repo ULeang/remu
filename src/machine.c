@@ -7,19 +7,21 @@
 
 #include "bus.h"
 #include "hart.h"
+#include "plic.h"
+#include "uart.h"
 
 #define default_dram_size 1024 * 1024 * 128ull
 
 MACHINE* default_machine() {
-  DRAM*    dram    = mk_dram(default_dram_size);
-  BUS*     bus     = mk_bus(dram);
+  DRAM* dram = mk_dram(default_dram_size);
+  bus_prepare(dram);
   MACHINE* machine = malloc(sizeof(MACHINE));
   assert(machine);
-  machine->hart = mk_hart(bus);
+  machine->hart = mk_hart(&bus_instance);
   return machine;
 }
 void dd_bin_dram(MACHINE* machine, const void* restrict src, size_t size) {
-  mem_dd(machine->hart->bus, 0x80000000, src, size);
+  mem_dd(0x80000000, src, size);
 }
 static void print_machine(MACHINE* machine) {
   printf("hart num: 1\n");

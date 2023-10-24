@@ -1,7 +1,11 @@
 #ifndef __PLIC_H__
 #define __PLIC_H__
 
-#include "hart.h"
+#include <stdatomic.h>
+
+#include "type.h"
+
+typedef struct HART HART;
 
 typedef struct PLIC {
   HART*    harts[8];
@@ -13,7 +17,12 @@ typedef struct PLIC {
   uint32_t interrupt_claim_completion_register[8];
 } PLIC;
 
-extern uint32_t plic_load(PLIC* plic, reg_t addr);
-extern void     plic_store(PLIC* plic, reg_t addr, uint32_t value);
+// singleton instance
+extern PLIC plic_instance;
+
+extern void     plic_prepare(HART* harts[], int nharts);
+extern uint32_t plic_load(reg_t addr);
+extern void     plic_store(reg_t addr, uint32_t value);
+extern void     gateway_interrupt_signal(uint32_t id);
 
 #endif

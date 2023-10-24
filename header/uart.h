@@ -21,10 +21,11 @@ typedef enum UART_REG_ADDR {
   SPR = 0b111,  // Scratchpad Register Read
 } UART_REG_ADDR;
 
+// singleton instance
 extern UART uart_instance;
 
-extern void    uart_init();
-extern uint8_t uart_load(UART* uart, UART_REG_ADDR addr);
-extern void    uart_store(UART* uart, UART_REG_ADDR addr, uint8_t value);
+extern void    uart_prepare();
+extern uint8_t uart_load(UART_REG_ADDR addr);
+extern void    uart_store(UART_REG_ADDR addr, uint8_t value);
 
 #endif

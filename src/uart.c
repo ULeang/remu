@@ -32,7 +32,8 @@ static void cleanup() {
 static int uart_thread(void* arg) { return 0; }
 
 UART uart_instance = {.registers[RHR] = 0, .registers[LSR] = 0};
-void uart_init() {
+
+void uart_prepare() {
   my_termios_init();
   signal(SIGINT, cleanup);
   signal(SIGQUIT, cleanup);
@@ -41,7 +42,7 @@ void uart_init() {
   thrd_create(&thrd, uart_thread, NULL);
   thrd_detach(thrd);
 }
-uint8_t uart_load(UART* uart, UART_REG_ADDR addr) { return uart->registers[addr]; }
-void    uart_store(UART* uart, UART_REG_ADDR addr, uint8_t value) {
-  uart->registers[addr] = value;
+uint8_t uart_load(UART_REG_ADDR addr) { return uart_instance.registers[addr]; }
+void    uart_store(UART_REG_ADDR addr, uint8_t value) {
+  uart_instance.registers[addr] = value;
 }

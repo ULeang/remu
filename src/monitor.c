@@ -278,7 +278,7 @@ static int com_memory(MACHINE *machine, char *fmt_addr) {
     addr               = temp;
     s                  = stripwhite(s);
   }
-  if(addr==0){
+  if (addr == 0) {
     printf("address needed\n");
     return -3;
   }
@@ -303,32 +303,16 @@ static int com_memory(MACHINE *machine, char *fmt_addr) {
     mprintf(addr, "");
     for (int ii = 0; ii < nprint; ++ii) {
       switch (format) {
-      case O:
-        printf(&" %lo"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
-        break;
-      case X:
-        printf(&" %lx"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
-        break;
-      case D:
-        printf(&" %ld"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
-        break;
-      case U:
-        printf(&" %lu"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
-        break;
-      case T:
-        printf(&" %lx"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
-        break;
-      case F:
-        printf(&" %f"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
-        break;
-      case A:
-        printf(&" %p"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
-        break;
-      case I:
-        printf(&" %08lx"[(ii == 0)], mem_load(machine->hart->bus, addr, size));
-        break;
+      case O: printf(&" %lo"[(ii == 0)], mem_load(addr, size)); break;
+      case X: printf(&" %lx"[(ii == 0)], mem_load(addr, size)); break;
+      case D: printf(&" %ld"[(ii == 0)], mem_load(addr, size)); break;
+      case U: printf(&" %lu"[(ii == 0)], mem_load(addr, size)); break;
+      case T: printf(&" %lx"[(ii == 0)], mem_load(addr, size)); break;
+      case F: printf(&" %f"[(ii == 0)], mem_load(addr, size)); break;
+      case A: printf(&" %p"[(ii == 0)], mem_load(addr, size)); break;
+      case I: printf(&" %08lx"[(ii == 0)], mem_load(addr, size)); break;
       case C: {
-        unsigned char c = mem_load(machine->hart->bus, addr, size);
+        unsigned char c = mem_load(addr, size);
         if (isprint(c))
           printf(&" %c"[ii == 0], c);
         else {
@@ -341,9 +325,7 @@ static int com_memory(MACHINE *machine, char *fmt_addr) {
                machine -> hart -> bus -> dram -> dram + (addr - DRAM_BASE));
         addr += strlen((char *)machine->hart->bus->dram->dram + (addr - DRAM_BASE));
         break;
-      case Z:
-        printf(&" %0*lx"[(ii == 0)],size*2, mem_load(machine->hart->bus, addr, size));
-        break;
+      case Z: printf(&" %0*lx"[(ii == 0)], size * 2, mem_load(addr, size)); break;
       }
       addr += size;
     }

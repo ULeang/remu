@@ -17,10 +17,9 @@
 
 #define PRL (hart->privilege)
 
-#define LOAD(addr, length) \
-  (SEXT(mem_load(hart->bus, (addr), (length)), (length) << 3))
-#define LOADU(addr, length)        (mem_load(hart->bus, (addr), (length)))
-#define STORE(addr, length, value) (mem_store(hart->bus, (addr), (length), (value)))
+#define LOAD(addr, length)         (SEXT(mem_load((addr), (length)), (length) << 3))
+#define LOADU(addr, length)        (mem_load((addr), (length)))
+#define STORE(addr, length, value) (mem_store((addr), (length), (value)))
 
 #define CSRR(addr)        (csrr(&hart->csr, (addr)))
 #define CSRW(addr, value) (csrw(&hart->csr, (addr), (value)))

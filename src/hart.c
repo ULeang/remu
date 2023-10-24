@@ -24,9 +24,7 @@ static reg_t imm_j(uint32_t inst) {
               21);
 }
 
-void fetch(HART *hart) {
-  hart->decoder.inst = mem_load(hart->bus, hart->pc, 4);
-}
+void fetch(HART *hart) { hart->decoder.inst = mem_load(hart->pc, 4); }
 void decode(HART *hart) {
   DECODER *dec  = &hart->decoder;
   uint32_t inst = hart->decoder.inst;
