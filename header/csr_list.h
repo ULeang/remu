@@ -1,5 +1,5 @@
-#ifndef __CSR__LIST_H__
-#define __CSR__LIST_H__
+#ifndef __CSR_LIST_H__
+#define __CSR_LIST_H__
 
 typedef enum CSR_ADDR {
   /* Unprivileged Floating-Point CSRs */

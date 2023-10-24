@@ -2,6 +2,8 @@
 #define __BUS_H__
 
 #include "dram.h"
+#include "plic.h"
+#include "uart.h"
 
 enum MEM_MAP {
   DRAM_BASE  = 0x80000000ull,
@@ -10,6 +12,7 @@ enum MEM_MAP {
 
 typedef struct BUS {
   DRAM* dram;
+
 } BUS;
 
 extern BUS*  mk_bus(DRAM* dram);
