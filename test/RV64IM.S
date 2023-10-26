@@ -1,62 +1,43 @@
   .text
+  .set  plic_base,  0xc000000
+  .set  claim,  0x200004
+  .set  uart_priority_addr, 10*4
+  .set  IE, 0x2000
+  .set  UART_BASE,  0x10000000
+  .set  THR, 0
+  .set  RHR, 0
   .globl _start
-  .set UART_BASE, 0x10000000
-  .set THR, 0
-  .set RHR, 0
 _start:
-/*
-  li    t0,1145141919
-  li    t1,514
-  mul   t0,t0,t1
-  mul   a0,t0,t0
-  mulhu a1,t0,t0
-  la    a3,res
-  sd    a0,(a3)
-  la    a3,data1
-  ld    a4,(a3)
-  div   a5,a4,t1
-  rem   a6,a4,t1
+  la    t0,M_trap_vector
+  csrw  mtvec,t0
+  li    t0,0x8
+  csrrs x0,mstatus,t0
+  li    t0,0x0800
+  csrrs x0,mie,t0
+  li    t0,plic_base
+  li    t1,7
+  sw    t1,uart_priority_addr(t0)
+  li    t2,IE
+  add   t0,t0,t2
+  li    t1,0xffffffff
+  sw    t1,(t0)
+loop:
+  j     loop
 
-uart_write_test:
-  la    t0,UART_BASE
-  la    t1,'H'
-  sb    t1,THR(t0)
-  la    t1,'e'
-  sb    t1,THR(t0)
-  la    t1,'l'
-  sb    t1,THR(t0)
-  la    t1,'l'
-  sb    t1,THR(t0)
-  la    t1,'o'
-  sb    t1,THR(t0)
-  la    t1,' '
-  sb    t1,THR(t0)
-  la    t1,'u'
-  sb    t1,THR(t0)
-  la    t1,'a'
-  sb    t1,THR(t0)
-  la    t1,'r'
-  sb    t1,THR(t0)
-  la    t1,'t'
-  sb    t1,THR(t0)
-  la    t1,'!'
-  sb    t1,THR(t0)
-  la    t1,'\n'
-  sb    t1,THR(t0)
-  */
-uart_read_test:
-  la    t0,UART_BASE
-  lb    t1,RHR(t0)
-  beqz  t1,uart_read_test
-  sb    t1,THR(t0)
-  j     uart_read_test
-  wfi
-
-/*
-res:
-  .8byte 0
-data1:
-  .8byte 0x1919810
-helloworld:
-  .asciz  "Hello World!"
-  */
+  .balign 4
+M_trap_vector:
+  csrr  t0,mcause
+  li    t1,0x800000000000000b
+  bne   t0,t1,exit
+  li    t0,plic_base
+  li    t1,claim
+  add   t2,t0,t1
+  lw    t3,(t2)
+  li    t4,10
+  bne   t3,t4,exit
+  li    t5,UART_BASE
+  lb    t0,RHR(t5)
+  sb    t0,THR(t5)
+  sw    t3,(t2)
+exit:
+  mret

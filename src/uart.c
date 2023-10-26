@@ -36,20 +36,18 @@ static int uart_thread(void* arg) {
     read(STDIN_FILENO, &buffer, 1);
     if (buffer == 034) cleanup();
     atomic_store(uart_instance.registers + RHR, buffer);
-    while (atomic_load(uart_instance.registers + RHR) == buffer)
+    while (atomic_load(uart_instance.registers + RHR) == buffer) {
       gateway_interrupt_signal(10);
+    }
   }
 }
-/* static int uart_thread(void* arg) {
-  printf("store f\n");
-  atomic_store(uart_instance.registers + RHR, 'f');
-  while (atomic_load(uart_instance.registers + RHR) == 'f')
-    ;
-  printf("store s\n");
-  atomic_store(uart_instance.registers + RHR, 's');
-  return 0;
-}
-*/
+// static int uart_thread(void* arg) {
+//   atomic_store(uart_instance.registers + RHR, 'f');
+//   while (atomic_load(uart_instance.registers + RHR) == 'f')
+//     gateway_interrupt_signal(10);
+//   return 0;
+// }
+
 UART uart_instance;
 
 void uart_init() {

@@ -4,6 +4,7 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <threads.h>
+#include <stdio.h>
 
 #include "csr.h"
 #include "hart.h"
@@ -123,7 +124,8 @@ void plic_store(reg_t addr, uint32_t value) {
 void gateway_interrupt_signal(uint32_t id) {
   while (atomic_flag_test_and_set(&plic_instance.flag))
     ;
-  if (BIT(*(uint64_t*)plic_instance.gateway_pending, id) == 0) {
+  if (BIT(*(uint64_t*)plic_instance.gateway_pending, id) == 1) {
+    // notify();//TODO : for debug
     atomic_flag_clear(&plic_instance.flag);
     return;
   }

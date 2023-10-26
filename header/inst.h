@@ -85,17 +85,17 @@ extern void _remuw(HART* hart);
 typedef enum TRAP_CODE {
   /* interrupt */
   // 0:Reserved
-  Supervisor_software_interrupt = 1ull & (1ull << 63),
+  Supervisor_software_interrupt = 1ull | (1ull << 63),
   // 2:Reserved
-  Machine_software_interrupt = 3ull & (1ull << 63),
+  Machine_software_interrupt = 3ull | (1ull << 63),
   // 4:Reserved
-  Supervisor_timer_interrupt = 5ull & (1ull << 63),
+  Supervisor_timer_interrupt = 5ull | (1ull << 63),
   // 6:Reserved
-  Machine_timer_interrupt = 7ull & (1ull << 63),
+  Machine_timer_interrupt = 7ull | (1ull << 63),
   // 8:Reserved
-  Supervisor_external_interrupt = 9ull & (1ull << 63),
+  Supervisor_external_interrupt = 9ull | (1ull << 63),
   // 10:Reserved
-  Machine_external_interrupt = 11ull & (1ull << 63),
+  Machine_external_interrupt = 11ull | (1ull << 63),
   // 12-15:Reserved
   // >=16:Designated for platform usr
 

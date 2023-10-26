@@ -76,7 +76,7 @@ $(RBIN): $(RELF)
 $(RELF): $(ROBJS)
 	@$(RLD) -o $@ $< -Ttext=0x80000000
 $(RISCVDIR)/%.o: $(RISCVDIR)/%.S
-	@$(RAS) -o $@ $< -march=rv64im -mabi=lp64
+	@$(RAS) -o $@ $< -march=rv64im_zicsr -mabi=lp64
 .PHONY: code
 code:	$(RELF)
 	@$(ROBJDUMP) -S $(RELF) | less
