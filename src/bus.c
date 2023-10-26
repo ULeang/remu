@@ -6,7 +6,7 @@
 #include "uart.h"
 
 BUS   bus_instance = {.flag = ATOMIC_FLAG_INIT};
-void  bus_prepare(DRAM* dram) { bus_instance.dram = dram; }
+void  bus_init(DRAM* dram) { bus_instance.dram = dram; }
 reg_t mem_load(reg_t addr, int length) {
   reg_t ret;
   switch (addr) {

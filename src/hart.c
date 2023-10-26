@@ -5,7 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus.h"
+#include "csr.h"
+#include "csr_list.h"
 #include "inst.h"
+#include "plic.h"
 #include "utility.h"
 
 static reg_t imm_i(uint32_t inst) { return SEXT(BITS(inst, 31, 20), 12); }
@@ -223,11 +227,96 @@ void hart_run(HART *hart) {
     hart_step(hart);
   }
 }
+
+static int try_trap_to_S(HART *hart, reg_t enabled_pending) {
+  if (hart->privilege < S ||
+      ((hart->privilege == S) && csrr(&hart->csr, sstatus) & (1ull << 1))) {
+    TRAP_CODE trap_code;
+    if (enabled_pending & 1ull << 9) {
+      trap_code = Supervisor_external_interrupt;
+    } else if (enabled_pending & 1ull << 1) {
+      trap_code = Supervisor_software_interrupt;
+    } else if (enabled_pending & 1ull << 5) {
+      trap_code = Supervisor_timer_interrupt;
+    } else {
+      return -1;
+    }
+    csrw(&hart->csr, scause, trap_code);
+    csrw(&hart->csr, sepc, hart->pc);
+    csrw(&hart->csr, stval, 0);
+    csrw_f(&hart->csr, sstatus, 8, 8, hart->privilege);
+    csrw_f(&hart->csr, sstatus, 5, 5, BIT(csrr(&hart->csr, sstatus), 1));
+    csrw_f(&hart->csr, sstatus, 1, 1, 0);
+    hart->privilege           = S;
+    reg_t    tvec             = csrr(&hart->csr, stvec);
+    unsigned trap_vector_mode = tvec & 0b11ull;
+    reg_t    base             = tvec & ~0b11ull;
+    hart->pc = trap_vector_mode == 0 ? base : base + 4 * BITS(trap_code, 62, 0);
+    return 0;
+  } else {
+    return -1;
+  }
+}
+
+// -1 indicates no trap, 0 indicates trapped
+static int try_trap_to_M(HART *hart, reg_t enabled_pending) {
+  if (hart->privilege < M || csrr(&hart->csr, mstatus) & (1ull << 3)) {
+    reg_t     m_prior = 0;
+    TRAP_CODE trap_code;
+    if (enabled_pending & 1ull << 11) {
+      m_prior   = 1ull << 11;
+      trap_code = Machine_external_interrupt;
+    } else if (enabled_pending & 1ull << 3) {
+      m_prior   = 1ull << 3;
+      trap_code = Machine_software_interrupt;
+    } else if (enabled_pending & 1ull << 7) {
+      m_prior   = 1ull << 7;
+      trap_code = Machine_timer_interrupt;
+    } else if (enabled_pending & 1ull << 9) {
+      m_prior   = 1ull << 9;
+      trap_code = Supervisor_external_interrupt;
+    } else if (enabled_pending & 1ull << 1) {
+      m_prior   = 1ull << 1;
+      trap_code = Supervisor_software_interrupt;
+    } else if (enabled_pending & 1ull << 5) {
+      m_prior   = 1ull << 5;
+      trap_code = Supervisor_timer_interrupt;
+    } else {
+      return -1;  // return -1 if no defined interrupt pending
+    }
+    if ((m_prior & csrr(&hart->csr, mideleg)) == 1)
+      return try_trap_to_S(hart, enabled_pending);
+    // now trap to M
+    csrw(&hart->csr, mcause, trap_code);
+    csrw(&hart->csr, mepc, hart->pc);
+    csrw(&hart->csr, mtval, 0);
+    csrw_f(&hart->csr, mstatus, 12, 11, hart->privilege);
+    csrw_f(&hart->csr, mstatus, 7, 7, csrr_f(&hart->csr, mstatus, 3, 3));
+    csrw_f(&hart->csr, mstatus, 3, 3, 0);
+    hart->privilege           = M;
+    reg_t    tvec             = csrr(&hart->csr, mtvec);
+    unsigned trap_vector_mode = tvec & 0b11ull;
+    reg_t    base             = tvec & ~0b11ull;
+    hart->pc = trap_vector_mode == 0 ? base : base + 4 * BITS(trap_code, 62, 0);
+    return 0;
+  } else {
+    return -1;  // return -1 if privilege == M and MIE == 0
+  }
+}
+
+static void handle_interrupt(HART *hart) {
+  reg_t enabled_pending = csrr(&hart->csr, mip) & csrr(&hart->csr, mie);
+  // quickly return when no interrupt pending
+  if (enabled_pending == 0) return;
+  try_trap_to_M(hart, enabled_pending);
+}
+
 void hart_step(HART *hart) {
   fetch(hart);
   decode(hart);
   execute(hart);
   write_back(hart);
+  handle_interrupt(hart);
 }
 
 const char *reg_abinames[] = {"zero",  "ra", "sp",  "gp",  "tp", "t0", "t1", "t2",

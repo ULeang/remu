@@ -1,3 +1,5 @@
+/*http://byterunner.com/16550.html*/
+
 #ifndef __UART_H__
 #define __UART_H__
 
@@ -24,7 +26,7 @@ typedef enum UART_REG_ADDR {
 // singleton instance
 extern UART uart_instance;
 
-extern void    uart_prepare();
+extern void    uart_init();
 extern uint8_t uart_load(UART_REG_ADDR addr);
 extern void    uart_store(UART_REG_ADDR addr, uint8_t value);
 

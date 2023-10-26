@@ -14,10 +14,12 @@
 
 MACHINE* default_machine() {
   DRAM* dram = mk_dram(default_dram_size);
-  bus_prepare(dram);
+  bus_init(dram);
   MACHINE* machine = malloc(sizeof(MACHINE));
   assert(machine);
   machine->hart = mk_hart(&bus_instance);
+
+  plic_init(&machine->hart, 1);
   return machine;
 }
 void dd_bin_dram(MACHINE* machine, const void* restrict src, size_t size) {

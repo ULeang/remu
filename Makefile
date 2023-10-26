@@ -60,11 +60,11 @@ $(BUILDDIR)/%.d: $(SRCDIR)/%.S
 
 .PHONY: run
 run: all
-	@./$(BINTARGET) $(RBIN)
+	@./$(BINTARGET) -f $(RBIN) -m no-monitor
 
 .PHONY: debug
 debug: all
-	@$(GDB) --args $(BINTARGET) $(RBIN) -q
+	@$(GDB) --args $(BINTARGET) -f $(RBIN) -m no-monitor -q
 
 .PHONY: clean
 clean:

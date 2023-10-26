@@ -54,9 +54,8 @@
 #define inst_read_flag  (hart->decoder.rd != 0)
 #define inst_write_flag (hart->decoder.rs1 != 0)
 
-static void raise_exception(HART* hart, EXCEPTION_CODE exception_code) {
-  reg_t trap_code = exception_code;
-  if (PRL <= S && CSRR_F(medeleg, exception_code, exception_code)) {
+static void raise_exception(HART* hart, TRAP_CODE trap_code) {
+  if (PRL <= S && CSRR_F(medeleg, trap_code, trap_code)) {
     CSRW(scause, trap_code);
     CSRW(sepc, CPC);
     CSRW(stval, 0);

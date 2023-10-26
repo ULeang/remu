@@ -33,7 +33,7 @@ static int uart_thread(void* arg) { return 0; }
 
 UART uart_instance = {.registers[RHR] = 0, .registers[LSR] = 0};
 
-void uart_prepare() {
+void uart_init() {
   my_termios_init();
   signal(SIGINT, cleanup);
   signal(SIGQUIT, cleanup);

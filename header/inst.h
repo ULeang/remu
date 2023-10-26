@@ -82,44 +82,45 @@ extern void _divuw(HART* hart);
 extern void _remw(HART* hart);
 extern void _remuw(HART* hart);
 
-typedef enum EXCEPTION_CODE {
+typedef enum TRAP_CODE {
   /* interrupt */
   // 0:Reserved
-  Supervisor_software_interrupt = 1,
+  Supervisor_software_interrupt = 1ull & (1ull << 63),
   // 2:Reserved
-  Machine_software_interrupt = 3,
+  Machine_software_interrupt = 3ull & (1ull << 63),
   // 4:Reserved
-  Supervisor_timer_interrupt = 5,
+  Supervisor_timer_interrupt = 5ull & (1ull << 63),
   // 6:Reserved
-  Machine_timer_interrupt = 7,
+  Machine_timer_interrupt = 7ull & (1ull << 63),
   // 8:Reserved
-  Supervisor_external_interrupt = 9,
+  Supervisor_external_interrupt = 9ull & (1ull << 63),
   // 10:Reserved
-  Machine_external_interrupt = 11,
-  // >=16:Reserved
+  Machine_external_interrupt = 11ull & (1ull << 63),
+  // 12-15:Reserved
+  // >=16:Designated for platform usr
 
   /* exception */
-  Instruction_address_misaligned = 0,
-  Instruction_access_fault       = 1,
-  Illegal_instruction            = 2,
-  Breakpoint                     = 3,
-  Load_address_misaligned        = 4,
-  Load_access_fault              = 5,
-  Store_AMO_address_misaligned   = 6,
-  Store_AMO_access_fault         = 7,
-  Environment_call_from_U_mode   = 8,
-  Environment_call_from_S_mode   = 9,
+  Instruction_address_misaligned = 0ull,
+  Instruction_access_fault       = 1ull,
+  Illegal_instruction            = 2ull,
+  Breakpoint                     = 3ull,
+  Load_address_misaligned        = 4ull,
+  Load_access_fault              = 5ull,
+  Store_AMO_address_misaligned   = 6ull,
+  Store_AMO_access_fault         = 7ull,
+  Environment_call_from_U_mode   = 8ull,
+  Environment_call_from_S_mode   = 9ull,
   // 10:Reserved
-  Environment_call_from_M_mode = 11,
-  Instruction_page_fault       = 12,
-  Load_page_fault              = 13,
+  Environment_call_from_M_mode = 11ull,
+  Instruction_page_fault       = 12ull,
+  Load_page_fault              = 13ull,
   // 14:Reserved
-  Store_AMO_page_fault = 15,
+  Store_AMO_page_fault = 15ull,
   // 16-23:Reserved
   // 24-31:Designated for custom use
   // 32-47:Reserved
   // 48-63:Designated for custom use
   // >=64:Reserved
-} EXCEPTION_CODE;
+} TRAP_CODE;
 
 #endif

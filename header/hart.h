@@ -1,6 +1,8 @@
 #ifndef __HART_H__
 #define __HART_H__
 
+#include <stdatomic.h>
+
 #include "bus.h"
 #include "csr.h"
 #include "type.h"

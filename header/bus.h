@@ -26,7 +26,7 @@ typedef struct BUS {
 // singleton instance
 extern BUS bus_instance;
 
-extern void  bus_prepare(DRAM* dram);
+extern void  bus_init(DRAM* dram);
 extern reg_t mem_load(reg_t addr, int length);
 extern void  mem_store(reg_t addr, int length, reg_t val);
 extern void  mem_dd(reg_t addr, const void* restrict src, size_t size);

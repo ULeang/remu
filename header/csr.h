@@ -1,11 +1,14 @@
 #ifndef __CSR_H__
 #define __CSR_H__
 
+#include <stdatomic.h>
+
 #include "csr_list.h"
 #include "type.h"
 
 typedef struct CSR {
-  reg_t csr[4096];
+  reg_t       csr[4096];
+  atomic_flag xip_lock;
 } CSR;
 
 /*
