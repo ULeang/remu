@@ -12,6 +12,16 @@
 
 #define default_dram_size 1024 * 1024 * 128ull
 
+MACHINE* monitor_machine() {
+  DRAM* dram = mk_dram(default_dram_size);
+  bus_init(dram);
+  MACHINE* machine = malloc(sizeof(MACHINE));
+  assert(machine);
+  machine->hart = mk_hart(&bus_instance);
+
+  plic_init(&machine->hart, 1);
+  return machine;
+}
 MACHINE* default_machine() {
   DRAM* dram = mk_dram(default_dram_size);
   bus_init(dram);
@@ -20,6 +30,7 @@ MACHINE* default_machine() {
   machine->hart = mk_hart(&bus_instance);
 
   plic_init(&machine->hart, 1);
+  uart_init();
   return machine;
 }
 void dd_bin_dram(MACHINE* machine, const void* restrict src, size_t size) {

@@ -56,12 +56,10 @@ int main(int argc, char** argv) {
   fread(buffer, 512, 1, fp);
   fclose(fp);
 
-  MACHINE* machine = default_machine();
-  dd_bin_dram(machine, buffer, 512);
-  // boot(machine);
-  hart_reset(machine->hart);
-
   if (launch_mode == MONITOR_MODE) {
+    MACHINE* machine = monitor_machine();
+    dd_bin_dram(machine, buffer, 512);
+    hart_reset(machine->hart);
     initialize_readline();
     char* input = NULL;
     while (1) {
@@ -71,6 +69,9 @@ int main(int argc, char** argv) {
     }
     return 0;
   } else if (launch_mode == RUN_MODE) {
+    MACHINE* machine = default_machine();
+    dd_bin_dram(machine, buffer, 512);
+    hart_reset(machine->hart);
     boot(machine);
     return 0;
   }

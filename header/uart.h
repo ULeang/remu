@@ -7,7 +7,7 @@
 #include "type.h"
 
 typedef struct ns16550 {
-  uint8_t registers[8];
+  atomic_uint_fast8_t registers[8];
 } UART;
 
 typedef enum UART_REG_ADDR {

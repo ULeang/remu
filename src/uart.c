@@ -29,11 +29,33 @@ static void cleanup() {
   exit(1);
 }
 
-static int uart_thread(void* arg) { return 0; }
-
-UART uart_instance = {.registers[RHR] = 0, .registers[LSR] = 0};
+static int uart_thread(void* arg) {
+  while (1) {
+    char buffer;
+    tcflush(STDIN_FILENO, TCIFLUSH);
+    read(STDIN_FILENO, &buffer, 1);
+    if (buffer == 034) cleanup();
+    atomic_store(uart_instance.registers + RHR, buffer);
+    while (atomic_load(uart_instance.registers + RHR) == buffer)
+      gateway_interrupt_signal(10);
+  }
+}
+/* static int uart_thread(void* arg) {
+  printf("store f\n");
+  atomic_store(uart_instance.registers + RHR, 'f');
+  while (atomic_load(uart_instance.registers + RHR) == 'f')
+    ;
+  printf("store s\n");
+  atomic_store(uart_instance.registers + RHR, 's');
+  return 0;
+}
+*/
+UART uart_instance;
 
 void uart_init() {
+  for (int i = 0; i < 8; ++i) {
+    atomic_init(uart_instance.registers + i, 0);
+  }
   my_termios_init();
   signal(SIGINT, cleanup);
   signal(SIGQUIT, cleanup);
@@ -42,7 +64,20 @@ void uart_init() {
   thrd_create(&thrd, uart_thread, NULL);
   thrd_detach(thrd);
 }
-uint8_t uart_load(UART_REG_ADDR addr) { return uart_instance.registers[addr]; }
-void    uart_store(UART_REG_ADDR addr, uint8_t value) {
-  uart_instance.registers[addr] = value;
+uint8_t uart_load(UART_REG_ADDR addr) {
+  switch (addr) {
+  case RHR: {
+    return atomic_exchange(uart_instance.registers + RHR, 0);
+  }
+  default: return atomic_load(uart_instance.registers + addr);
+  }
+}
+void uart_store(UART_REG_ADDR addr, uint8_t value) {
+  switch (addr) {
+  case THR:
+    putchar(value);
+    fflush(stdout);
+    break;
+  default: atomic_store(uart_instance.registers + addr, value);
+  }
 }

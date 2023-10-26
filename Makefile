@@ -64,7 +64,7 @@ run: all
 
 .PHONY: debug
 debug: all
-	@$(GDB) --args $(BINTARGET) -f $(RBIN) -m no-monitor -q
+	@$(GDB) -q --args $(BINTARGET) -f $(RBIN) -m no-monitor
 
 .PHONY: clean
 clean:
