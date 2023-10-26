@@ -2,11 +2,11 @@
 a toy RISC-V emulator written in c(RV64IM)
 
 ## Features
-- incomplete functions
-- poor performance
-- difficult to use
-- terrible coding style
-- and much more
+- RV64IM_zicsr
+- M,S,U privilege mode
+- plic(supports up to 64 sources and 8 targets)
+- uart(simple,incomplete,only basic keyboard IO)
+- monitor for debug(hard to use yet)
 
 ## Installation
 
